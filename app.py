@@ -23,20 +23,22 @@ st.set_page_config(page_title="CCR Line - Ops Excellence Dashboard", layout="wid
 # ---------------------------------------------------------------- data ----
 @st.cache_data(ttl=900)
 def fetch_sheet():
-    url = (f"https://docs.google.com/spreadsheets/d/{SHEET_ID}"
-           "/gviz/tq?tqx=out:json&sheet=OEE_Data")
+    # Complete baked data (via Sheets API) — gviz drops label-only rows,
+    # so we read the baked JSON instead. Refreshed every ~30 min.
+    url = "https://pclwaqas786-ctrl.github.io/ccr-oee-dashboard/data.json"
     r = requests.get(url, timeout=30)
     r.raise_for_status()
-    txt = r.text
-    d = json.loads(txt[txt.index("({") + 1:txt.rindex("})") + 1])
-    if d.get("status") != "ok":
-        raise RuntimeError("sheet returned status " + str(d.get("status")))
-    rows = []
-    for row in d["table"]["rows"]:
-        cells = row.get("c") or []
-        rows.append([c.get("v") if isinstance(c, dict) else None for c in cells])
-    return {"fetched_at": datetime.datetime.now().strftime("%d %b %Y, %H:%M"),
-            "rows": rows}
+    d = r.json()
+    values = d.get("values", [])
+    if not values:
+        raise RuntimeError("empty baked data")
+    try:
+        fa = datetime.datetime.fromisoformat(d["fetched_at"])
+        fetched = fa.strftime("%d %b %Y, %H:%M")
+    except Exception:
+        fetched = str(d.get("fetched_at", ""))
+    rows = [list(r) + [None] * (16 - len(r)) for r in values]
+    return {"fetched_at": fetched, "rows": rows}
 
 
 def num(v):
