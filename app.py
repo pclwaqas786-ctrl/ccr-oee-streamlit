@@ -140,16 +140,19 @@ def pct(x):
 # ---------------------------------------------------------------- UI ------
 st.markdown("""
 <style>
-  .kpi-card { background:#fff; border:1px solid #d9e1ea; border-left:5px solid var(--ac,#1f4e78);
+  .kpi-card { background:#ffffff; border:1px solid #d9e1ea; border-left:5px solid var(--ac,#1f4e78);
     border-radius:10px; padding:12px 14px; box-shadow:0 1px 3px rgba(16,42,67,.08); }
   .kpi-card .lbl { font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.6px; }
   .kpi-card .val { font-size:28px; font-weight:700; color:#1c2733; }
   .kpi-card .note { font-size:12px; color:#64748b; }
   h1, h2, h3 { color:#1c2733; }
+  .title-accent { height:4px; border-radius:2px; margin:-6px 0 14px 0; background:#1f4e78; }
+  section[data-testid="stSidebar"] { display:none; }
 </style>
 """, unsafe_allow_html=True)
 
 st.title("CCR LINE — OPS EXCELLENCE DASHBOARD")
+st.markdown('<div class="title-accent"></div>', unsafe_allow_html=True)
 st.caption("Source: OEE_Data (Google Sheet) · Company format: Daily & Period-wise")
 
 try:
