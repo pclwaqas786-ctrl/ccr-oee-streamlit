@@ -167,6 +167,27 @@ if st.button("↻ Refresh data"):
     fetch_sheet.clear()
     st.rerun()
 
+# ---- yearly summary strip (very top) ----
+if M["trend"]:
+    ms = M["trend"]
+    tgt = M["target"] or 4800
+    ytd = ms[-1]["cum"]
+    ypct = ytd / tgt if tgt else 0
+    st.subheader("Yearly Summary (FY 2025-26)")
+    yc = st.columns(4)
+    for col, (lbl, val, ac) in zip(yc, [
+            ("Yearly Target (MT)", f"{tgt:,.0f}", BLUE),
+            ("YTD Achieved (MT)", f"{ytd:,.0f}", GREEN),
+            ("Balance (MT)", f"{tgt - ytd:,.0f}", "#b45309"),
+            ("% of Target", f"{ypct * 100:.1f}%", "#6d28d9")]):
+        with col:
+            st.markdown(
+                f'<div class="kpi-card" style="--ac:{ac}">'
+                f'<div class="lbl">{lbl}</div><div class="val">{val}</div></div>',
+                unsafe_allow_html=True)
+    st.progress(min(max(ypct, 0.0), 1.0))
+    st.divider()
+
 # ---- KPI cards ----
 bal = mtd.get("plan", 0) - mtd.get("ach", 0)
 kpis = [
