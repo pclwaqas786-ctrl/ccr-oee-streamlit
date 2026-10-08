@@ -291,7 +291,10 @@ def gauge(col, name, val, color, key):
 
 st.subheader("Daily Review")
 if M["daily"]:
-    L = M["daily"][-1]
+    p5 = datetime.timezone(datetime.timedelta(hours=5))
+    today = datetime.datetime.now(p5).date()
+    past = [d for d in M["daily"] if d["date"].date() <= today]
+    L = past[-1] if past else M["daily"][-1]
     st.write(f"**{L['date'].strftime('%d-%b-%Y')}** — latest finalized day")
     st.write(f"Planned: **{L['plan']:.1f} MT** · Achieved: **{L['ach']:.1f} MT** · "
              f"% Ach: **{pct(L['ach'] / L['plan'] if L['plan'] else 0)}**")
