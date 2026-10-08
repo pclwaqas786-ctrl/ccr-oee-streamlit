@@ -98,7 +98,8 @@ def parse_model(rows):
                 "avail": num(r[2]), "dt": num(r[3]), "run": num(r[4]),
                 "availP": num(r[5]), "plan": num(r[6]), "ach": num(r[7]),
                 "perfP": num(r[8]), "good": num(r[9]), "qualP": num(r[10]),
-                "oee": num(r[11]), "status": str(r[12] or "")})
+                "oee": num(r[11]), "status": str(r[12] or ""),
+                "ach_blank": str(r[7] or "").strip() == ""})
             continue
         if re.match(r"^MTD TOTAL", lab, re.I):
             M["mtd"] = {"avail": num(r[2]), "dt": num(r[3]), "run": num(r[4]),
@@ -293,7 +294,8 @@ st.subheader("Daily Review")
 if M["daily"]:
     p5 = datetime.timezone(datetime.timedelta(hours=5))
     today = datetime.datetime.now(p5).date()
-    past = [d for d in M["daily"] if d["date"].date() <= today]
+    past = [d for d in M["daily"]
+            if d["date"].date() <= today and not d.get("ach_blank")]
     L = past[-1] if past else M["daily"][-1]
     st.write(f"**{L['date'].strftime('%d-%b-%Y')}** — latest finalized day")
     st.write(f"Planned: **{L['plan']:.1f} MT** · Achieved: **{L['ach']:.1f} MT** · "
