@@ -173,6 +173,16 @@ if st.button("↻ Refresh data"):
     st.rerun()
 
 # ---- yearly summary strip (very top) ----
+def fy_label():
+    """Pakistan FY (Jul-Jun), e.g. Oct 2026 -> 'FY 2026-27'."""
+    p5 = datetime.timezone(datetime.timedelta(hours=5))
+    now = datetime.datetime.now(p5)
+    if now.month >= 7:
+        return f"FY {now.year}-{str(now.year + 1)[2:]}"
+    return f"FY {now.year - 1}-{str(now.year)[2:]}"
+
+
+FY = fy_label()
 def last_month_entry(ms):
     """Trend entry for the last completed calendar month (PKT)."""
     p5 = datetime.timezone(datetime.timedelta(hours=5))
@@ -198,7 +208,7 @@ if M["trend"]:
     ytd = sum(m["prod"] for m in ms)
     ypct = ytd / tgt if tgt else 0
     lm = last_month_entry(ms)
-    st.subheader("Yearly Summary (FY 2025-26)")
+    st.subheader(f"Yearly Summary ({FY})")
     yc = st.columns(5)
     cards = [
         ("Yearly Target (MT)", f"{tgt:,.0f}", BLUE),
@@ -376,7 +386,7 @@ if M["daily"]:
 st.divider()
 
 # ---- monthly production ----
-st.subheader("Month-wise Production (FY 2025-26)")
+st.subheader(f"Month-wise Production ({FY})")
 if M["trend"]:
     ms = M["trend"]
     tgt = M["target"] or 4800
