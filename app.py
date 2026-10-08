@@ -302,16 +302,28 @@ if M["daily"]:
     plans = [d["plan"] for d in M["daily"]]
     achs = [d["ach"] for d in M["daily"]]
     colors = []
+    labels = []
+    pcts = []
     for d in M["daily"]:
         r = d["ach"] / d["plan"] if d["plan"] > 0 else -1
         colors.append("#cbd5e1" if r < 0 else GREEN if r >= 1
                       else AMBER if r >= 0.7 else RED)
+        pcts.append(r * 100 if r >= 0 else 0)
+        if d["ach"] > 0 and r >= 0:
+            labels.append(f"{d['ach']:.1f} MT ({r * 100:.0f}%)")
+        else:
+            labels.append("")
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=xs, y=plans, name="Planned", marker_color="#b0b9c5"))
-    fig.add_trace(go.Bar(x=xs, y=achs, name="Achieved", marker_color=colors))
-    fig.update_layout(barmode="group", height=320,
-                      margin=dict(l=10, r=10, t=30, b=10),
-                      legend=dict(orientation="h", y=1.05))
+    fig.add_trace(go.Bar(x=xs, y=plans, name="Planned", marker_color="#b0b9c5",
+                         hovertemplate="%{x}<br>Planned: %{y:.1f} MT<extra></extra>"))
+    fig.add_trace(go.Bar(x=xs, y=achs, name="Achieved", marker_color=colors,
+                         text=labels, textposition="outside", textangle=-90,
+                         textfont=dict(size=11),
+                         customdata=pcts,
+                         hovertemplate="%{x}<br>Achieved: %{y:.1f} MT (%{customdata:.0f}% of plan)<extra></extra>"))
+    fig.update_layout(barmode="group", height=360,
+                      margin=dict(l=10, r=10, t=40, b=10),
+                      legend=dict(orientation="h", y=1.08))
     st.plotly_chart(fig, use_container_width=True)
     st.caption("Achieved bar color: green = plan met/exceeded, amber = partial, red = low")
 
