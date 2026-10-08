@@ -85,7 +85,7 @@ def parse_date(v):
 
 def parse_model(rows):
     M = {"daily": [], "mtd": {}, "reasons": [], "trend": [], "periods": [],
-         "target": 0.0}
+         "target": 0.0, "shift": []}
     section = None
     for r in rows:
         r = list(r) + [None] * (14 - len(r))
@@ -109,6 +109,8 @@ def parse_model(rows):
             continue  # reasons continue after the MTD row — keep section open
         if re.match(r"^MTD Downtime by Reason", lab, re.I):
             section = "reasons"; continue
+        if re.match(r"^MTD Production by Shift", lab, re.I):
+            section = "shift"; continue
         if re.match(r"^Yearly Production Trend", lab, re.I):
             section = "trend"; continue
         if re.match(r"^Period-wise Summary", lab, re.I):
@@ -121,6 +123,8 @@ def parse_model(rows):
             continue
         if section == "reasons" and lab:
             M["reasons"].append({"name": lab, "hrs": num(r[2])})
+        elif section == "shift" and lab and re.match(r"^Shift", lab, re.I):
+            M["shift"].append({"name": lab, "prod": num(r[2])})
         elif section == "trend" and lab and re.search(r"-26|-27", lab, re.I):
             M["trend"].append({"m": lab, "prod": num(r[2]), "cum": num(r[3])})
         elif section == "periods" and re.match(r"^Week", lab, re.I):
@@ -363,6 +367,23 @@ if M["daily"]:
                       legend=dict(orientation="h", y=1.1))
     st.plotly_chart(fig, use_container_width=True, key="daily-prod")
     st.caption("Achieved bar color: green = plan met/exceeded, amber = partial, red = low")
+
+# ---- shift-wise production (MTD) ----
+if M["shift"]:
+    st.subheader("Shift-wise Production (MTD)")
+    sns = [s["name"] for s in M["shift"]]
+    svs = [s["prod"] for s in M["shift"]]
+    tot = sum(svs)
+    fig = go.Figure(go.Bar(
+        x=svs, y=sns, orientation="h",
+        marker_color=["#1f4e78", "#5b9bd5"],
+        text=[f"{v:.1f} MT" for v in svs], textposition="outside",
+        textfont=dict(size=13),
+        hovertemplate="%{y}: %{x:.1f} MT<extra></extra>"))
+    fig.update_layout(height=200, margin=dict(l=10, r=60, t=10, b=10),
+                      xaxis_title="MT")
+    st.plotly_chart(fig, use_container_width=True, key="shift-prod")
+    st.caption(f"Total across shifts: {tot:.1f} MT")
 
 # ---- downtime (stacked full-width for mobile) ----
 st.subheader("MTD Downtime by Reason ⚠ pending verification")
