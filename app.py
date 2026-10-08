@@ -218,33 +218,30 @@ for i, (lbl, val, note, ac) in enumerate(kpis):
 
 st.divider()
 
-# ---- OEE trend + period table ----
-c1, c2 = st.columns([3, 2])
-with c1:
-    st.subheader("Daily & Period-wise — OEE %")
-    if M["daily"]:
-        xs = [d["date"] for d in M["daily"]]
-        ys = [d["oee"] * 100 for d in M["daily"]]
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=xs, y=ys, mode="lines+markers",
-                                 name="OEE %", line=dict(color=BLUE, width=2.5),
-                                 fill="tozeroy", fillcolor="rgba(31,78,120,0.12)"))
-        fig.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10),
-                          yaxis_title="OEE %", xaxis_title="Date")
-        st.plotly_chart(fig, use_container_width=True)
-with c2:
-    st.subheader("Period-wise Summary")
-    if M["periods"]:
-        import pandas as pd
-        df = pd.DataFrame([{
-            "Period": p["p"], "Avail": pct(p["avail"]), "Perf": pct(p["perf"]),
-            "Qual": pct(p["qual"]), "OEE": pct(p["oee"]),
-            "Plan": round(p["plan"]), "Ach": round(p["ach"], 1)}
-            for p in M["periods"]])
-        st.dataframe(df, use_container_width=True, hide_index=True)
+# ---- OEE trend + period table (stacked full-width for mobile) ----
+st.subheader("Daily & Period-wise — OEE %")
+if M["daily"]:
+    xs = [d["date"] for d in M["daily"]]
+    ys = [d["oee"] * 100 for d in M["daily"]]
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=xs, y=ys, mode="lines+markers",
+                             name="OEE %", line=dict(color=BLUE, width=2.5),
+                             fill="tozeroy", fillcolor="rgba(31,78,120,0.12)"))
+    fig.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10),
+                      yaxis_title="OEE %", xaxis_title="Date")
+    st.plotly_chart(fig, use_container_width=True, key="oee-trend")
+
+st.subheader("Period-wise Summary")
+if M["periods"]:
+    df = pd.DataFrame([{
+        "Period": p["p"], "Avail": pct(p["avail"]), "Perf": pct(p["perf"]),
+        "Qual": pct(p["qual"]), "OEE": pct(p["oee"]),
+        "Plan": round(p["plan"]), "Ach": round(p["ach"], 1)}
+        for p in M["periods"]])
+    st.dataframe(df, use_container_width=True, hide_index=True)
 
 # ---- daily review + monthly review ----
-def gauge(col, name, val, color):
+def gauge(col, name, val, color, key):
     with col:
         fig = go.Figure(go.Indicator(
             mode="gauge+number", value=val * 100,
@@ -254,7 +251,7 @@ def gauge(col, name, val, color):
                    "bar": {"color": color},
                    "bgcolor": "#eef1f6"}))
         fig.update_layout(height=180, margin=dict(l=10, r=10, t=30, b=10))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=key)
 
 
 st.subheader("Daily Review")
@@ -266,25 +263,25 @@ if M["daily"]:
     st.write(f"Availability: **{pct(L['availP'])}** — run {L['run'] / 60:.1f} hrs / "
              f"available {L['avail'] / 60:.1f} hrs · Downtime: **{L['dt'] / 60:.1f} hrs**")
     d1, d2, d3, d4 = st.columns(4)
-    for col, (name, val, color) in zip(
+    for col, (name, val, color, key) in zip(
             (d1, d2, d3, d4),
-            [("Performance", L["perfP"], AMBER),
-             ("Quality", L["qualP"], GREEN),
-             ("Availability", L["availP"], BLUE),
-             ("OEE", L["oee"], "#6d28d9")]):
-        gauge(col, name, val, color)
+            [("Performance", L["perfP"], AMBER, "d-perf"),
+             ("Quality", L["qualP"], GREEN, "d-qual"),
+             ("Availability", L["availP"], BLUE, "d-avail"),
+             ("OEE", L["oee"], "#6d28d9", "d-oee")]):
+        gauge(col, name, val, color, key)
 
 st.divider()
 
 st.subheader("Monthly Review (MTD)")
 g1, g2, g3, g4 = st.columns(4)
-for col, (name, val, color) in zip(
+for col, (name, val, color, key) in zip(
         (g1, g2, g3, g4),
-        [("Performance", mtd.get("perfP", 0), AMBER),
-         ("Quality", mtd.get("qualP", 0), GREEN),
-         ("Availability", mtd.get("availP", 0), BLUE),
-         ("OEE", mtd.get("oeeP", 0), "#6d28d9")]):
-    gauge(col, name, val, color)
+        [("Performance", mtd.get("perfP", 0), AMBER, "m-perf"),
+         ("Quality", mtd.get("qualP", 0), GREEN, "m-qual"),
+         ("Availability", mtd.get("availP", 0), BLUE, "m-avail"),
+         ("OEE", mtd.get("oeeP", 0), "#6d28d9", "m-oee")]):
+    gauge(col, name, val, color, key)
 
 st.table(pd.DataFrame([
     {"Metric": "Performance", "MTD Value": f"{mtd.get('perfP', 0) * 100:.1f}%"},
@@ -324,35 +321,32 @@ if M["daily"]:
     fig.update_layout(barmode="group", height=360,
                       margin=dict(l=10, r=10, t=40, b=10),
                       legend=dict(orientation="h", y=1.08))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="daily-prod")
     st.caption("Achieved bar color: green = plan met/exceeded, amber = partial, red = low")
 
-# ---- downtime ----
-c1, c2 = st.columns(2)
-with c1:
-    st.subheader("MTD Downtime by Reason ⚠ pending verification")
-    st.caption("Reason-wise log (285.5 hrs) vs daily rows (52.0 hrs) — not yet reconciled.")
-    if M["reasons"]:
-        rs = sorted(M["reasons"], key=lambda r: r["hrs"], reverse=True)
-        fig = go.Figure(go.Bar(
-            x=[r["hrs"] for r in rs], y=[r["name"] for r in rs],
-            orientation="h", marker_color=AMBER,
-            text=[f"{r['hrs']:.1f} h" for r in rs], textposition="outside"))
-        fig.update_layout(height=max(220, 40 * len(rs)),
-                          margin=dict(l=10, r=10, t=10, b=10),
-                          xaxis_title="Hours")
-        st.plotly_chart(fig, use_container_width=True)
-with c2:
-    st.subheader("Daily Downtime Trend")
-    if M["daily"]:
-        xs = [d["date"].strftime("%d-%b") for d in M["daily"]]
-        hs = [d["dt"] / 60 for d in M["daily"]]
-        colors = [RED if h >= 10 else AMBER if h > 0 else "#e2e8f0" for h in hs]
-        fig = go.Figure(go.Bar(x=xs, y=hs, marker_color=colors,
-                               text=[f"{h:.1f}" for h in hs], textposition="outside"))
-        fig.update_layout(height=320, margin=dict(l=10, r=10, t=10, b=10),
-                          yaxis_title="Hours")
-        st.plotly_chart(fig, use_container_width=True)
+# ---- downtime (stacked full-width for mobile) ----
+st.subheader("MTD Downtime by Reason ⚠ pending verification")
+st.caption("Reason-wise log (285.5 hrs) vs daily rows (52.0 hrs) — not yet reconciled.")
+if M["reasons"]:
+    rs = sorted(M["reasons"], key=lambda r: r["hrs"], reverse=True)
+    fig = go.Figure(go.Bar(
+        x=[r["hrs"] for r in rs], y=[r["name"] for r in rs],
+        orientation="h", marker_color=AMBER,
+        text=[f"{r['hrs']:.1f} h" for r in rs], textposition="outside"))
+    fig.update_layout(height=max(220, 40 * len(rs)),
+                      margin=dict(l=10, r=10, t=10, b=10),
+                      xaxis_title="Hours")
+    st.plotly_chart(fig, use_container_width=True, key="dt-reasons")
+st.subheader("Daily Downtime Trend")
+if M["daily"]:
+    xs = [d["date"].strftime("%d-%b") for d in M["daily"]]
+    hs = [d["dt"] / 60 for d in M["daily"]]
+    colors = [RED if h >= 10 else AMBER if h > 0 else "#e2e8f0" for h in hs]
+    fig = go.Figure(go.Bar(x=xs, y=hs, marker_color=colors,
+                           text=[f"{h:.1f}" for h in hs], textposition="outside"))
+    fig.update_layout(height=320, margin=dict(l=10, r=10, t=10, b=10),
+                      yaxis_title="Hours")
+    st.plotly_chart(fig, use_container_width=True, key="dt-trend")
 
 st.divider()
 
@@ -383,7 +377,7 @@ if M["trend"]:
                       yaxis=dict(title="Monthly MT"),
                       yaxis2=dict(title="Cumulative MT", overlaying="y", side="right"),
                       legend=dict(orientation="h", y=1.05))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="monthly-prod")
     ytd = sum(m["prod"] for m in ms) if ms else 0
     st.write(f"**YTD: {ytd:,.0f} MT / {tgt:,.0f} MT target ({ytd / tgt * 100:.1f}%)** — "
              f"balance **{tgt - ytd:,.0f} MT**")
