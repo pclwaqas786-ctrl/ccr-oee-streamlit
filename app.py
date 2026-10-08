@@ -9,6 +9,7 @@ import re
 import datetime
 
 import requests
+import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 
@@ -284,6 +285,13 @@ for col, (name, val, color) in zip(
          ("Availability", mtd.get("availP", 0), BLUE),
          ("OEE", mtd.get("oeeP", 0), "#6d28d9")]):
     gauge(col, name, val, color)
+
+st.table(pd.DataFrame([
+    {"Metric": "Performance", "MTD Value": f"{mtd.get('perfP', 0) * 100:.1f}%"},
+    {"Metric": "Quality", "MTD Value": f"{mtd.get('qualP', 0) * 100:.1f}%"},
+    {"Metric": "Availability", "MTD Value": f"{mtd.get('availP', 0) * 100:.1f}%"},
+    {"Metric": "OEE", "MTD Value": f"{mtd.get('oeeP', 0) * 100:.1f}%"},
+]))
 
 st.divider()
 
