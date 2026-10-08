@@ -242,36 +242,48 @@ with c2:
             for p in M["periods"]])
         st.dataframe(df, use_container_width=True, hide_index=True)
 
-# ---- latest day + gauges ----
-c1, c2 = st.columns(2)
-with c1:
-    st.subheader("Latest Day Summary")
-    if M["daily"]:
-        L = M["daily"][-1]
-        st.write(f"**{L['date'].strftime('%d-%b-%Y')}** — latest finalized day")
-        st.write(f"Planned: **{L['plan']:.1f} MT** · Achieved: **{L['ach']:.1f} MT** · "
-                 f"% Ach: **{pct(L['ach'] / L['plan'] if L['plan'] else 0)}**")
-        st.write(f"Availability: **{pct(L['availP'])}** — run {L['run'] / 60:.1f} hrs / "
-                 f"available {L['avail'] / 60:.1f} hrs · Downtime: **{L['dt'] / 60:.1f} hrs**")
-with c2:
-    st.subheader("Monthly Review (MTD)")
-    g1, g2, g3, g4 = st.columns(4)
+# ---- daily review + monthly review ----
+def gauge(col, name, val, color):
+    with col:
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number", value=val * 100,
+            number={"suffix": "%", "font": {"size": 22}},
+            title={"text": name, "font": {"size": 12}},
+            gauge={"axis": {"range": [0, 100]},
+                   "bar": {"color": color},
+                   "bgcolor": "#eef1f6"}))
+        fig.update_layout(height=180, margin=dict(l=10, r=10, t=30, b=10))
+        st.plotly_chart(fig, use_container_width=True)
+
+
+st.subheader("Daily Review")
+if M["daily"]:
+    L = M["daily"][-1]
+    st.write(f"**{L['date'].strftime('%d-%b-%Y')}** — latest finalized day")
+    st.write(f"Planned: **{L['plan']:.1f} MT** · Achieved: **{L['ach']:.1f} MT** · "
+             f"% Ach: **{pct(L['ach'] / L['plan'] if L['plan'] else 0)}**")
+    st.write(f"Availability: **{pct(L['availP'])}** — run {L['run'] / 60:.1f} hrs / "
+             f"available {L['avail'] / 60:.1f} hrs · Downtime: **{L['dt'] / 60:.1f} hrs**")
+    d1, d2, d3, d4 = st.columns(4)
     for col, (name, val, color) in zip(
-            (g1, g2, g3, g4),
-            [("Performance", mtd.get("perfP", 0), AMBER),
-             ("Quality", mtd.get("qualP", 0), GREEN),
-             ("Availability", mtd.get("availP", 0), BLUE),
-             ("OEE", mtd.get("oeeP", 0), "#6d28d9")]):
-        with col:
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number", value=val * 100,
-                number={"suffix": "%", "font": {"size": 22}},
-                title={"text": name, "font": {"size": 12}},
-                gauge={"axis": {"range": [0, 100]},
-                       "bar": {"color": color},
-                       "bgcolor": "#eef1f6"}))
-            fig.update_layout(height=180, margin=dict(l=10, r=10, t=30, b=10))
-            st.plotly_chart(fig, use_container_width=True)
+            (d1, d2, d3, d4),
+            [("Performance", L["perfP"], AMBER),
+             ("Quality", L["qualP"], GREEN),
+             ("Availability", L["availP"], BLUE),
+             ("OEE", L["oee"], "#6d28d9")]):
+        gauge(col, name, val, color)
+
+st.divider()
+
+st.subheader("Monthly Review (MTD)")
+g1, g2, g3, g4 = st.columns(4)
+for col, (name, val, color) in zip(
+        (g1, g2, g3, g4),
+        [("Performance", mtd.get("perfP", 0), AMBER),
+         ("Quality", mtd.get("qualP", 0), GREEN),
+         ("Availability", mtd.get("availP", 0), BLUE),
+         ("OEE", mtd.get("oeeP", 0), "#6d28d9")]):
+    gauge(col, name, val, color)
 
 st.divider()
 
