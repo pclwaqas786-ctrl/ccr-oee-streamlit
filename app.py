@@ -175,7 +175,7 @@ if st.button("↻ Refresh data"):
 if M["trend"]:
     ms = M["trend"]
     tgt = M["target"] or 4800
-    ytd = ms[-1]["cum"]
+    ytd = sum(m["prod"] for m in ms)
     ypct = ytd / tgt if tgt else 0
     st.subheader("Yearly Summary (FY 2025-26)")
     yc = st.columns(4)
@@ -362,10 +362,16 @@ if M["trend"]:
     ms = M["trend"]
     tgt = M["target"] or 4800
     cum_tgt = [tgt / 12 * (i + 1) for i in range(len(ms))]
+    run_cum, cum_vals = 0, []
+    for m in ms:
+        run_cum += m["prod"]
+        cum_vals.append(run_cum)
     fig = go.Figure()
     fig.add_trace(go.Bar(x=[m["m"] for m in ms], y=[m["prod"] for m in ms],
-                         name="Production", marker_color=BLUE))
-    fig.add_trace(go.Scatter(x=[m["m"] for m in ms], y=[m["cum"] for m in ms],
+                         name="Production", marker_color=BLUE,
+                         text=[f"{m['prod']:.0f}" if m["prod"] > 0 else "" for m in ms],
+                         textposition="outside", textfont=dict(size=11)))
+    fig.add_trace(go.Scatter(x=[m["m"] for m in ms], y=cum_vals,
                              name="Cumulative", mode="lines+markers",
                              line=dict(color=GREEN, width=2.5, dash="dash"),
                              yaxis="y2"))
@@ -378,7 +384,7 @@ if M["trend"]:
                       yaxis2=dict(title="Cumulative MT", overlaying="y", side="right"),
                       legend=dict(orientation="h", y=1.05))
     st.plotly_chart(fig, use_container_width=True)
-    ytd = ms[-1]["cum"] if ms else 0
+    ytd = sum(m["prod"] for m in ms) if ms else 0
     st.write(f"**YTD: {ytd:,.0f} MT / {tgt:,.0f} MT target ({ytd / tgt * 100:.1f}%)** — "
              f"balance **{tgt - ytd:,.0f} MT**")
 
