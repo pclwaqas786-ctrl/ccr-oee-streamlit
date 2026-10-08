@@ -424,5 +424,4 @@ if M["trend"]:
 
 st.divider()
 st.caption("This dashboard reads data from the OEE_Data tab of the Google Sheet — "
-           "updates appear automatically (cached ~15 min). Share only this app link "
-           "with management; no need to share the full sheet.")
+           "updates appear automatically (cached ~15 min).")
