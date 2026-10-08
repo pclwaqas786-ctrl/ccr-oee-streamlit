@@ -6,6 +6,7 @@ for 15 minutes.
 """
 import json
 import re
+import calendar
 import datetime
 
 import requests
@@ -172,18 +173,42 @@ if st.button("↻ Refresh data"):
     st.rerun()
 
 # ---- yearly summary strip (very top) ----
+def last_month_entry(ms):
+    """Trend entry for the last completed calendar month (PKT)."""
+    p5 = datetime.timezone(datetime.timedelta(hours=5))
+    now = datetime.datetime.now(p5)
+    lm_m = now.month - 1 or 12
+    lm_y = now.year if now.month > 1 else now.year - 1
+    want = f"{calendar.month_abbr[lm_m]}-{str(lm_y)[2:]}"
+    for m in ms:
+        if m["m"].strip() == want:
+            return m
+    cur = f"{calendar.month_abbr[now.month]}-{str(now.year)[2:]}"
+    prev = None
+    for m in ms:
+        if m["m"].strip() == cur:
+            return prev
+        prev = m
+    return None
+
+
 if M["trend"]:
     ms = M["trend"]
     tgt = M["target"] or 4800
     ytd = sum(m["prod"] for m in ms)
     ypct = ytd / tgt if tgt else 0
+    lm = last_month_entry(ms)
     st.subheader("Yearly Summary (FY 2025-26)")
-    yc = st.columns(4)
-    for col, (lbl, val, ac) in zip(yc, [
-            ("Yearly Target (MT)", f"{tgt:,.0f}", BLUE),
-            ("YTD Achieved (MT)", f"{ytd:,.0f}", GREEN),
-            ("Balance (MT)", f"{tgt - ytd:,.0f}", "#b45309"),
-            ("% of Target", f"{ypct * 100:.1f}%", "#6d28d9")]):
+    yc = st.columns(5)
+    cards = [
+        ("Yearly Target (MT)", f"{tgt:,.0f}", BLUE),
+        ("YTD Achieved (MT)", f"{ytd:,.0f}", GREEN),
+        ("Balance (MT)", f"{tgt - ytd:,.0f}", "#b45309"),
+        ("% of Target", f"{ypct * 100:.1f}%", "#6d28d9"),
+    ]
+    if lm:
+        cards.append((f"Last Month ({lm['m']})", f"{lm['prod']:,.0f}", "#0f766e"))
+    for col, (lbl, val, ac) in zip(yc, cards):
         with col:
             st.markdown(
                 f'<div class="kpi-card" style="--ac:{ac}">'
