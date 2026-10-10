@@ -88,7 +88,7 @@ def parse_model(rows):
          "target": 0.0, "shift": []}
     section = None
     for r in rows:
-        r = list(r) + [None] * (14 - len(r))
+        r = list(r) + [None] * (16 - len(r))
         a = r[0]
         lab = str(r[1] if r[1] is not None else "").strip()
         if a not in (None, "") and str(a).strip().replace(".", "", 1).isdigit() \
@@ -99,7 +99,8 @@ def parse_model(rows):
                 "availP": num(r[5]), "plan": num(r[6]), "ach": num(r[7]),
                 "perfP": num(r[8]), "good": num(r[9]), "qualP": num(r[10]),
                 "oee": num(r[11]), "status": str(r[12] or ""),
-                "ach_blank": str(r[7] or "").strip() == ""})
+                "ach_blank": str(r[7] or "").strip() == "",
+                "shiftA": num(r[14]), "shiftB": num(r[15])})
             continue
         if re.match(r"^MTD TOTAL", lab, re.I):
             M["mtd"] = {"avail": num(r[2]), "dt": num(r[3]), "run": num(r[4]),
@@ -384,6 +385,27 @@ if M["shift"]:
                       xaxis_title="MT")
     st.plotly_chart(fig, use_container_width=True, key="shift-prod")
     st.caption(f"Total across shifts: {tot:.1f} MT")
+
+# ---- daily shift-wise production ----
+if M["daily"]:
+    st.subheader("Daily Production by Shift")
+    xs = [d["date"].strftime("%d-%b") for d in M["daily"]]
+    sa = [d.get("shiftA", 0) for d in M["daily"]]
+    sb = [d.get("shiftB", 0) for d in M["daily"]]
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=xs, y=sa, name="Shift A", marker_color="#1f4e78",
+                         text=[f"{v:.1f}" if v > 0 else "0" for v in sa],
+                         textposition="outside", textfont=dict(size=10),
+                         hovertemplate="%{x}<br>Shift A: %{y:.1f} MT<extra></extra>"))
+    fig.add_trace(go.Bar(x=xs, y=sb, name="Shift B", marker_color="#5b9bd5",
+                         text=[f"{v:.1f}" if v > 0 else "0" for v in sb],
+                         textposition="outside", textfont=dict(size=10),
+                         hovertemplate="%{x}<br>Shift B: %{y:.1f} MT<extra></extra>"))
+    fig.update_layout(barmode="group", height=380,
+                      margin=dict(l=10, r=10, t=40, b=10),
+                      legend=dict(orientation="h", y=1.08),
+                      yaxis_title="MT")
+    st.plotly_chart(fig, use_container_width=True, key="daily-shift")
 
 # ---- downtime (stacked full-width for mobile) ----
 st.subheader("MTD Downtime by Reason ⚠ pending verification")
