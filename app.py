@@ -154,6 +154,7 @@ st.markdown("""
   .kpi-card .note { font-size:12px; color:#64748b; }
   h1, h2, h3 { color:#1c2733; }
   .title-accent { height:4px; border-radius:2px; margin:-6px 0 14px 0; background:#1f4e78; }
+  section[data-testid="stSidebar"] { display:none; }
 </style>
 """, unsafe_allow_html=True)
 
